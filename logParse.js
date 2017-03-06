@@ -1,8 +1,6 @@
 var fs = require('fs');
-var sorto = require('sorto');
 var pad = require('pad');
 var filePath = '/users/yzhang2/Google Drive/Andy Shared/python/switchlog.txt';
-// var filePath = '/users/yzhang2/Google Drive/Andy Shared/python/tmp.txt';
 
 var ipAddressRegex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/i;
 var macAddressRegex = /\[([0-9a-fA-F]{4}[.]){2}[0-9a-fA-F]{4}\//i;
@@ -37,46 +35,68 @@ var lineReader = require('readline').createInterface({
 getRegexMatchCount(lineReader, countByPatterns, function (ipMatchesByPatterns) {
   for (var pattern in ipMatchesByPatterns) {
     var results = ipMatchesByPatterns[pattern];
+    // Print the pattern heading.
     console.log('------------------------------------------------');
     console.log(pattern);
     console.log('------------------------------------------------');
 
+    // Figure out if the there is a specific count limit for the pattern.
     var countLimit = 0;
     if (countLimitsByPatterns.hasOwnProperty(pattern)) {
       countLimit = countLimitsByPatterns[pattern];
     }
 
+    // Init printable results array.
     var printableResults = [];
+    // For each match key in the results.
     for (var match in results) {
+
+      // Use regex again to get the sections out of the match key.
       var ipAddress = getRegex(match, ipAddressRegex);
       var macAddress = getRegex(match, macAddressLeanRegex);
       var interface = getRegex(match, interfaceRegex);
 
+      // Get the count for the match key.
       var count = results[match];
+
+      // Init the printable result object.
       var printableResult = {};
+
+      // Assumes ip address is always available.
       printableResult['ipAddress'] = ipAddress;
+
+      // Generate a key for pretty print. (right pad the string).
       var key = pad(ipAddress, 16);
 
+      // If there exists match address.
       if (macAddress) {
+        // Add to pretty print key.
         key += pad(macAddress, 20);
       }
+      // If there exists interface.
       else if(interface) {
+        // Add to pretty print key.
         key += pad(interface, 16);
       }
 
+      // If the count is greater than count limit.
       if (count > countLimit) {
         printableResult['key'] = key;
         printableResult['count'] = count;
+        // Add printable result to the array.
         printableResults.push(printableResult);
       }
     }
-    var items = printableResults.sort(function (a, b) {
+
+    // Sort the printable results by their corresponding ip addresses.
+    var sortedResults = printableResults.sort(function (a, b) {
       var x = a['ipAddress'];
       var y = b['ipAddress'];
       return ((x < y) ? -1 : ((x > y) ? 1 : 0));
     });
-    for (var i in items) {
-      var item = items[i];
+    // Print the sorted results.
+    for (var i in sortedResults) {
+      var item = sortedResults[i];
       console.log(item.key, item.count);
     }
     console.log('------------------------------------------------');
