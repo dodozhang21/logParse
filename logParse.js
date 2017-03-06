@@ -58,20 +58,16 @@ getRegexMatchCount(lineReader, countByPatterns, function (ipMatchesByPatterns) {
       var key = pad(ipAddress, 16);
 
       if (macAddress) {
-        printableResult['macAddress'] = macAddress;
         key += pad(macAddress, 20);
       }
       else if(interface) {
-        printableResult['interface'] = interface;
         key += pad(interface, 16);
       }
 
       if (count > countLimit) {
         printableResult['key'] = key;
         printableResult['count'] = count;
-        // console.log(printableResult.key, printableResult.count);
         printableResults.push(printableResult);
-        // printableResults[key] = count;
       }
     }
     var items = printableResults.sort(function (a, b) {
@@ -95,7 +91,8 @@ getRegexMatchCount(lineReader, countByPatterns, function (ipMatchesByPatterns) {
  * @param lineReader
  *   The reader object that contains the file read.
  * @param patternsToMatch
- *   An array of patterns to match.
+ *   A map of patterns to match where the key is the string to match and the
+ *   value is an array of regex.
  * @param cb
  *   The callback function whose parameter is the results map.
  */
@@ -131,8 +128,8 @@ function getRegexMatchCount(lineReader, patternsToMatch, cb) {
  * @param resultsMap
  *   The results map (passed by reference) where the key is the regex match and
  *   the value is the number of times the regex match has previously appeared.
- *   In the case where the regex match does not exist in the map, the new
- *   match is added to the map with a count of 1 as its value.
+ *   In the case where the regex match does not exist in the map, the new match
+ *   is added to the map with a count of 1 as its value.
  */
 function lineMatch(line, pattern, regexList, resultsMap) {
   // Does the line contain the pattern?
@@ -143,10 +140,10 @@ function lineMatch(line, pattern, regexList, resultsMap) {
     var matches = [];
     for (var i in regexList) {
       var regex = regexList[i];
-      var result = getRegex(line, regex);
+      var match = getRegex(line, regex);
       // Match found.
-      if (result) {
-        matches.push(result);
+      if (match) {
+        matches.push(match);
       }
     }
     // If we have at least one match.
