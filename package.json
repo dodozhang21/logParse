@@ -2,6 +2,6 @@
   "name": "logParse",
   "version": "0.0.1",
   "devDependencies": {
-
+    "pad": "^1.1.0"
   }
 }

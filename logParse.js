@@ -1,4 +1,6 @@
 var fs = require('fs');
+var sorto = require('sorto');
+var pad = require('pad');
 var filePath = '/users/yzhang2/Google Drive/Andy Shared/python/switchlog.txt';
 // var filePath = '/users/yzhang2/Google Drive/Andy Shared/python/tmp.txt';
 
@@ -39,16 +41,51 @@ getRegexMatchCount(lineReader, countByPatterns, function (ipMatchesByPatterns) {
     console.log(pattern);
     console.log('------------------------------------------------');
 
+    var countLimit = 0;
+    if (countLimitsByPatterns.hasOwnProperty(pattern)) {
+      countLimit = countLimitsByPatterns[pattern];
+    }
+
+    var printableResults = [];
     for (var match in results) {
+      var ipAddress = getRegex(match, ipAddressRegex);
+      var macAddress = getRegex(match, macAddressLeanRegex);
+      var interface = getRegex(match, interfaceRegex);
+
       var count = results[match];
-      var countLimit = 0;
-      if (countLimitsByPatterns.hasOwnProperty(pattern)) {
-        countLimit = countLimitsByPatterns[pattern];
+      var printableResult = {};
+      printableResult['ipAddress'] = ipAddress;
+      var key = pad(ipAddress, 16);
+
+      if (macAddress) {
+        printableResult['macAddress'] = macAddress;
+        key += pad(macAddress, 20);
       }
+      else if(interface) {
+        printableResult['interface'] = interface;
+        key += pad(interface, 16);
+      }
+
       if (count > countLimit) {
-        console.log(match + ' > ', count);
+        printableResult['key'] = key;
+        printableResult['count'] = count;
+        // console.log(printableResult.key, printableResult.count);
+        printableResults.push(printableResult);
+        // printableResults[key] = count;
       }
     }
+    var items = printableResults.sort(function (a, b) {
+      var x = a['ipAddress'];
+      var y = b['ipAddress'];
+      return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+    });
+    for (var i in items) {
+      var item = items[i];
+      console.log(item.key, item.count);
+    }
+    console.log('------------------------------------------------');
+    console.log('');
+    console.log('');
   }
 });
 
@@ -148,4 +185,12 @@ function getRegex(line, regex) {
   }
 
   return false;
+}
+
+function sortByKey(array, key) {
+  return array.sort(function (a, b) {
+    var x = a[key];
+    var y = b[key];
+    return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+  });
 }
