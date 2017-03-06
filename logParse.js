@@ -1,6 +1,11 @@
 var fs = require('fs');
 var pad = require('pad');
-var filePath = '/users/yzhang2/Google Drive/Andy Shared/python/switchlog.txt';
+
+if (process.argv.length !== 3) {
+  console.error('You need to call this program like "node logParse.js \'/path/to/log.txt\'"');
+  process.exit(1);
+}
+var filePath = process.argv[2];
 
 var ipAddressRegex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/i;
 var macAddressRegex = /\[([0-9a-fA-F]{4}[.]){2}[0-9a-fA-F]{4}\//i;
