@@ -5,6 +5,11 @@ DHCP Database Save Failures (critical) Text to match ---> DHCP_SNOOPING-4-AGENT_
 
 Power Supply Faults (critical) Text to match ---> NGWC_PLATFORM_FEP-1-FRU_PS_ACCESS
 
+Configuration updates (informational) Text to match ---> SYS-5-CONFIG_I
+
+Switches restarted (informational) Text to match ---> SYS-5-RESTART
+
+
 POE Errors (critical) Text to match ---> ILPOWER-3-CONTROLLER_PORT_ERR
 
 MAC Flap Notifications (Count of 5 or more per day per mac) (warning) Text to match ---> SW_MATM-4-MACFLAP_NOTIF
