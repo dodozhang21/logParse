@@ -11,24 +11,25 @@ var ipAddressRegex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/i;
 var macAddressRegex = /\[([0-9a-fA-F]{4}[.]){2}[0-9a-fA-F]{4}\//i;
 var macAddressLeanRegex = /([0-9a-fA-F]{4}[.]){2}[0-9a-fA-F]{4}/i;
 var interfaceRegex = /\w{2}\d(\/\d{1,2}){1,2}/i;
+var userConfigRegex = /[by]{2}[ ]{1}(\w[a-zA-Z]{1,12})/i;
 
 var countByPatterns = {
   'DHCP_SNOOPING-4-AGENT_OPERATION_FAILED_N': [ipAddressRegex],
   'NGWC_PLATFORM_FEP-1-FRU_PS_ACCESS': [ipAddressRegex],
-  'SYS-5-CONFIG_I': [ipAddressRegex],
+  'SYS-5-CONFIG_I': [ipAddressRegex, userConfigRegex],
   'SYS-5-RESTART': [ipAddressRegex],
-  'SW_DAI-4-INVALID_ARP': [ipAddressRegex, macAddressRegex],
-  'SW_DAI-4-DHCP_SNOOPING_DENY': [ipAddressRegex, macAddressRegex],
-  'SW_MATM-4-MACFLAP_NOTIF': [ipAddressRegex, macAddressLeanRegex],
+  'SW_DAI-4-INVALID_ARP': [ipAddressRegex, macAddressRegex, interfaceRegex],
+  'SW_DAI-4-DHCP_SNOOPING_DENY': [ipAddressRegex, macAddressRegex, interfaceRegex],
+  'SW_MATM-4-MACFLAP_NOTIF': [ipAddressRegex, macAddressLeanRegex, interfaceRegex],
   'ILPOWER-3-CONTROLLER_PORT_ERR': [ipAddressRegex, interfaceRegex],
   'STORM_CONTROL-3-FILTERED': [ipAddressRegex, interfaceRegex],
   'PM-4-ERR_DISABLE': [ipAddressRegex, interfaceRegex],
 };
 
 var countLimitsByPatterns = {
-  'SW_DAI-4-INVALID_ARP': 10,
-  'SW_DAI-4-DHCP_SNOOPING_DENY': 10,
-  'SW_MATM-4-MACFLAP_NOTIF': 5,
+  'SW_DAI-4-INVALID_ARP': 1,
+  'SW_DAI-4-DHCP_SNOOPING_DENY': 1,
+  'SW_MATM-4-MACFLAP_NOTIF': 1,
 };
 
 // Read the file.
@@ -41,9 +42,9 @@ getRegexMatchCount(lineReader, countByPatterns, function (ipMatchesByPatterns) {
   for (var pattern in ipMatchesByPatterns) {
     var results = ipMatchesByPatterns[pattern];
     // Print the pattern heading.
-    console.log('------------------------------------------------');
+    console.log('--------------------------------------------------------');
     console.log(pattern);
-    console.log('------------------------------------------------');
+    console.log('--------------------------------------------------------');
 
     // Figure out if the there is a specific count limit for the pattern.
     var countLimit = 0;
@@ -59,6 +60,7 @@ getRegexMatchCount(lineReader, countByPatterns, function (ipMatchesByPatterns) {
       // Use regex again to get the sections out of the match key.
       var ipAddress = getRegex(match, ipAddressRegex);
       var macAddress = getRegex(match, macAddressLeanRegex);
+      var userConfig = getRegex(match, userConfigRegex);
       var interface = getRegex(match, interfaceRegex);
 
       // Get the count for the match key.
@@ -76,7 +78,10 @@ getRegexMatchCount(lineReader, countByPatterns, function (ipMatchesByPatterns) {
       // If there exists match address.
       if (macAddress) {
         // Add to pretty print key.
-        key += pad(macAddress, 20);
+        key += pad(macAddress, 16);
+      }
+      if (userConfig) {
+        key += pad(userConfig, 16)
       }
       // If there exists interface.
       else if(interface) {
@@ -104,7 +109,7 @@ getRegexMatchCount(lineReader, countByPatterns, function (ipMatchesByPatterns) {
       var item = sortedResults[i];
       console.log(item.key, item.count);
     }
-    console.log('------------------------------------------------');
+    console.log('--------------------------------------------------------');
     console.log('');
     console.log('');
   }
@@ -126,12 +131,15 @@ function getRegexMatchCount(lineReader, patternsToMatch, cb) {
   var ipMatchesByPatterns = {};
   for (var pattern in patternsToMatch) {
     ipMatchesByPatterns[pattern] = {};
+    // console.log(ipMatchesByPatterns[pattern]);
   }
 
   // When a line is read.
   lineReader.on('line', function (line) {
     for (var pattern in patternsToMatch) {
       var regexList = patternsToMatch[pattern];
+      // console.log(regexList);
+      // console.log(ipMatchesByPatterns[pattern]);
       lineMatch(line, pattern, regexList, ipMatchesByPatterns[pattern]);
     }
   // Once the whole file is read.
@@ -169,11 +177,13 @@ function lineMatch(line, pattern, regexList, resultsMap) {
       // Match found.
       if (match) {
         matches.push(match);
+        // console.log(matches);
       }
     }
     // If we have at least one match.
     if (matches.length) {
       key = matches.join(' ');
+      // console.log(key);
       // Does the regex match already exist in the results map?
       if (resultsMap.hasOwnProperty(key)) {
         // Increment its value by 1.
@@ -185,6 +195,7 @@ function lineMatch(line, pattern, regexList, resultsMap) {
         resultsMap[key] = 1;
       }
     }
+  // console.log(resultsMap);
   }
 }
 
@@ -203,6 +214,7 @@ function getRegex(line, regex) {
 
   // If regex is found.
   if (found) {
+    // console.log(found[0]);
     return found[0];
   }
 
