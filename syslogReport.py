@@ -31,7 +31,8 @@ minCountByLog = {
 }
 
 # Read in the Syslog File
-logFile = raw_input("Enter filename and path: ")
+# logFile = raw_input("Enter filename and path: ")
+logFile = '/Users/yzhang2/Google Drive/Andy Shared/python/logtest.txt'
 
 # Define an object class to define sortable/printable Syslog match attributes
 class objResult:
@@ -79,19 +80,19 @@ def lineMatch(line, pattern, regexList, matchResults):
             if match:
                 matches.append(match)
 
-                # If we have at least one match, create a string of the matches
-                if len(matches)>1:
-                    key = " ".join(matches)
+        # If we have at least one match, create a string of the matches
+        if len(matches)>1:
+            key = " ".join(matches)
 
-                    # Does the regex match already exist in the match results?
-                    if key in matchResults:
-                        # If so, increment its value by 1
-                        matchResults[key]+=1
+            # Does the regex match already exist in the match results?
+            if key in matchResults:
+                # If so, increment its value by 1
+                matchResults[key]+=1
 
-                    else:
-                        # The regex match does not exist in the match results.
-                        # Add the regex match to the map with a value of 1.
-                        matchResults[key] = 1
+            else:
+                # The regex match does not exist in the match results.
+                # Add the regex match to the map with a value of 1.
+                matchResults[key] = 1
 
 
 # Function to find and return Regular Expression Matches 
@@ -106,9 +107,9 @@ def getRegex(line, regex):
 
 # Function to Print report output to console
 def displayMatches(patternMatches):
-    for pattern in patternMatches:
-        results = patternMatches[pattern]
-        # Print the pattern heading
+    # print patternMatches
+
+    for pattern, results in patternMatches.iteritems():
         print('------------------------------------------------------------')
         print(pattern)
         print('------------------------------------------------------------')
@@ -118,25 +119,15 @@ def displayMatches(patternMatches):
         if pattern in minCountByLog:
             countLimit = minCountByLog[pattern]
 
-        # Initialize printable results array
-        printableResults = []
+        # Create an empty list for sorted results which we will print from
+        objSorted = []
         # For each match key in the results
-        for match in results:
-
+        for match, count in results.iteritems():
             # Use regex again to get the sections out of the match key
             ipAddress = getRegex(match, ipAddrRegex)
             macAddress = getRegex(match, macAddrRegex)
             interface = getRegex(match, interfaceRegex)
             configUser = getRegex(match, userConfigRegex)
-
-            # Get the count for the match key.
-            count = results[match]
-
-            # Init the printable result object.
-            printableResult = {}
-
-            # Assumes ip address is always available
-            printableResult['ipAddress'] = ipAddress
 
             # Generate a key for formatted printing by IP
             key = ipAddress.ljust(16)
@@ -148,31 +139,21 @@ def displayMatches(patternMatches):
             # If Interface is part of match, add formatting
             if interface:
                 key += interface.ljust(20)
-                
+
             # If User is part of match, add formatting
             if configUser:
                 key += configUser.ljust(20)
 
-            # If the count is greater than count limit
             if count > countLimit:
-                printableResult['key'] = key
-                printableResult['count'] = count
-                # Add printable result to the array
-                printableResults.append(printableResult)
-
-        # Create an empty list for sorted results which we will print from
-        objSorted = []
-
-        # Loop through the results and assign object properties to sort by
-        for item in printableResults:
-            objSorted.append(objResult(item['count'], item['ipAddress'], item['key']))
+                objSorted.append(
+                    objResult(count, ipAddress, key))
 
         # Sort the list by the custom ipSort function
         objSorted.sort(ipSort)
 
         # Print the sorted results to the console
         for result in objSorted:
-            print result.key + ' ' + str(result.count)            
+            print result.key + ' ' + str(result.count)
 
         print('------------------------------------------------------------')
         print('')
