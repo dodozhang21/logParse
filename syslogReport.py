@@ -1,4 +1,5 @@
 import re
+from socket import gethostbyaddr
 
 # Regular Expressions to Match in Logs
 ipAddrRegex = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
@@ -7,7 +8,7 @@ macAddrRegex = re.compile(r"([0-9a-fA-F]{4}[.]){2}[0-9a-fA-F]{4}")
 macAddrBraceRegex = re.compile(r"\[([0-9a-fA-F]{4}[.]){2}[0-9a-fA-F]{4}")
 macAddrColComRegex = re.compile(r"([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}")
 interfaceRegex = re.compile(r"[AaEeFfGgIiOoTt]{2}(\d{1})(\/\d{1,2}){1,2}")
-userConfigRegex = re.compile(r"[by]{2}[ ]{1}(\w[a-zA-Z]{1,12})")
+userConfigRegex = re.compile(r"[b]{1}[y]{1}[ ]{1}(\w[a-zA-Z]{1,12})")
 
 # Dictionary Correlating Syslog Strings and Regex Patterns to Match
 logPatterns = {
@@ -25,14 +26,14 @@ logPatterns = {
 
 # Establish a minimum count threshold for certain log messages before including into report
 minCountByLog = {
-  "SW_DAI-4-INVALID_ARP": 1,
-  "SW_DAI-4-DHCP_SNOOPING_DENY": 1,
-  "SW_MATM-4-MACFLAP_NOTIF": 1,
+  "SW_DAI-4-INVALID_ARP": 30,
+  "SW_DAI-4-DHCP_SNOOPING_DENY": 30,
+  "SW_MATM-4-MACFLAP_NOTIF": 30,
+  "STORM_CONTROL-3-FILTERED": 5,
 }
 
 # Read in the Syslog File
-# logFile = raw_input("Enter filename and path: ")
-logFile = '/Users/yzhang2/Google Drive/Andy Shared/python/logtest.txt'
+logFile = raw_input("Enter filename and path: ")
 
 # Define an object class to define sortable/printable Syslog match attributes
 class objResult:
@@ -46,6 +47,13 @@ def ipSort(a, b):
     x = a.ipAddress
     y = b.ipAddress
     return (-1 if (x < y) else (1 if (x > y) else 0))
+
+# Function to resolve hostname from IP Address
+def getHostname(ip):
+    hostname = gethostbyaddr(ip)
+    hostname = str(hostname[0])
+    hostname = hostname.split(".")
+    return(hostname[0])
 
 # Main function -- matches log patterns & regular expressions in the Syslog File
 def regexMatchCount(inputFile, patterns):
@@ -81,7 +89,7 @@ def lineMatch(line, pattern, regexList, matchResults):
                 matches.append(match)
 
         # If we have at least one match, create a string of the matches
-        if len(matches)>1:
+        if len(matches)>0:
             key = " ".join(matches)
 
             # Does the regex match already exist in the match results?
@@ -107,12 +115,14 @@ def getRegex(line, regex):
 
 # Function to Print report output to console
 def displayMatches(patternMatches):
-    # print patternMatches
+    # Initialize a dictionary to cache switch hostnames
+    switchNames = {}
 
+    # print patternMatches
     for pattern, results in patternMatches.iteritems():
-        print('------------------------------------------------------------')
+        print('---------------------------------------------------------------------')
         print(pattern)
-        print('------------------------------------------------------------')
+        print('---------------------------------------------------------------------')
 
         # Figure out if the there is a specific count limit for the pattern
         countLimit = 0
@@ -129,8 +139,15 @@ def displayMatches(patternMatches):
             interface = getRegex(match, interfaceRegex)
             configUser = getRegex(match, userConfigRegex)
 
-            # Generate a key for formatted printing by IP
-            key = ipAddress.ljust(16)
+            # Check if matched IPs are in the cache, add them if not
+            if ipAddress in switchNames:
+                hostname = switchNames[ipAddress]
+            else:
+                hostname = getHostname(ipAddress)
+                switchNames[ipAddress] = hostname
+            
+            # Add print formatting to initial IP/Hostname Key
+            key = hostname.ljust(20)
 
             # If MAC address is part of match, add formatting
             if macAddress:
@@ -143,7 +160,8 @@ def displayMatches(patternMatches):
             # If User is part of match, add formatting
             if configUser:
                 key += configUser.ljust(20)
-
+            
+            # Verify count is above threshold then append to list
             if count > countLimit:
                 objSorted.append(
                     objResult(count, ipAddress, key))
@@ -155,7 +173,7 @@ def displayMatches(patternMatches):
         for result in objSorted:
             print result.key + ' ' + str(result.count)
 
-        print('------------------------------------------------------------')
+        print('---------------------------------------------------------------------')
         print('')
         print('')
 
